@@ -5,30 +5,34 @@
 
 #include "segmentlcd.h"
 
-#include "menuAlt.h"
+#include "menu.h"
 //#include "PID.h"
 #include "timer.h"
+#include "ssr.h"
 
 #define MENU_SENSITIVITY 6 //Slider reaction 
 #define MAXTIME 3000 //Max time you can set timer to
 #define TIMERMULT 10 //Faster scrolling when setting time
 
-static bool ShowTemp = true; //Determens what will be show in STATUSSUB, temp or time
+static bool ShowTemp = true; //Determines what will be show in STATUSSUB, temp or time
 
 enum state{
-    TEMP = 0,
+	POWER =0,
+    TEMP,
     TIMER,
     STATUS,
     OFF,
+    POWERSUB,
     TEMPSUB,
     TIMERSUB,
     STATUSSUB
 };
 
-enum state current_state = TEMP;
+enum state current_state = POWER;
 
 char *menuItems[]=
 {
+"POWER",
 "SETTEMP",
 "TIMER",
 "STATUS",
@@ -51,9 +55,10 @@ void MENU_Init(){
     
   /* Initialize LCD controller without boost */
   SegmentLCD_Init(false);
-  strcpy(Display.alpha, menuItems[TEMP]);
+  strcpy(Display.alpha, menuItems[POWER]);
   
   //PID_Init();
+  SSR_Set(100);
     
     
 }
@@ -72,6 +77,7 @@ void MENU_update(){
     }
     
     switch(current_state){
+    	case POWER:
         case TEMP:       
         case TIMER:
         case STATUS:
@@ -79,6 +85,9 @@ void MENU_update(){
             SegmentLCD_NumberOff();
             timerRing(0);
             SegmentLCD_Write(Display.alpha); 
+            break;
+        case POWERSUB:
+            SegmentLCD_Write(Display.alpha);
             break;
         case TEMPSUB:
             SegmentLCD_Write(Display.alpha);
@@ -108,6 +117,17 @@ void event_buttonSelect(){
     
     
     switch(current_state){
+    	case POWER:
+
+            SSR_TurnOn();
+
+
+            Display.alphaNum = SSR_Get();
+            snprintf(Display.alpha, 8, "%3d PWR", Display.alphaNum);
+            current_state = POWERSUB;
+
+            break;
+
         case TEMP: 
             Display.alphaNum = 0;
             snprintf(Display.alpha, 8, "%5d%%C", Display.alphaNum);
@@ -124,9 +144,16 @@ void event_buttonSelect(){
             break;
         case OFF:
             //PID_setPoint(0);
+        	SSR_TurnOff();
+            Display.alphaNum = SSR_Get();
+            snprintf(Display.alpha, 8, "%3d PWR", Display.alphaNum);
+        	current_state = POWERSUB;
+            break;
+        case POWERSUB:
+        	SSR_Set(Display.alphaNum);
             break;
         case TEMPSUB:
-            //PID_setPoint(Display.alphaNum);
+        	//PID_setPoint(Display.alphaNum);
             current_state = STATUSSUB;
             break;
         case TIMERSUB:
@@ -147,6 +174,8 @@ void event_buttonSelect(){
 void event_buttonBack(){
     
     switch(current_state){
+		case POWER:
+			break;
         case TEMP: 
             break;       
         case TIMER:
@@ -154,6 +183,10 @@ void event_buttonBack(){
         case STATUS:
             break;
         case OFF:
+            break;
+        case POWERSUB:
+            strcpy(Display.alpha, menuItems[POWER]);
+            current_state = POWER;
             break;
         case TEMPSUB:
             strcpy(Display.alpha, menuItems[TEMP]);
@@ -181,10 +214,19 @@ void event_buttonBack(){
 void event_sliderDiff(int32_t diff){
     
     switch(current_state){
+		case POWER:
+            if(diff >= MENU_SENSITIVITY){
+                strcpy(Display.alpha, menuItems[OFF]);
+                current_state = OFF;
+            }
+			break;
         case TEMP: 
             if(diff >= MENU_SENSITIVITY){
                 strcpy(Display.alpha, menuItems[TIMER]);
                 current_state = TIMER;
+            }else if(diff <= -MENU_SENSITIVITY){
+                strcpy(Display.alpha, menuItems[POWER]);
+                current_state = POWER;
             }
             break;       
         case TIMER:
@@ -207,9 +249,18 @@ void event_sliderDiff(int32_t diff){
             break;
         case OFF:
             if(diff <= -MENU_SENSITIVITY){
-                strcpy(Display.alpha, menuItems[STATUS]);
-                current_state = STATUS;
+                strcpy(Display.alpha, menuItems[POWER]);
+                current_state = POWER;
             }
+            break;
+        case POWERSUB:
+            Display.alphaNum += diff;
+            if(Display.alphaNum < 0){
+                Display.alphaNum=0;
+            }else if(Display.alphaNum > 100){
+                Display.alphaNum = 100;
+            }
+            snprintf(Display.alpha, 8, "%3d PWR", Display.alphaNum);
             break;
         case TEMPSUB:
             Display.alphaNum += diff;
@@ -246,6 +297,8 @@ void event_sliderChange(int32_t change){
     int32_t tmp = 0;
     
     switch(current_state){
+		case POWER:
+			break;
         case TEMP: 
             break;       
         case TIMER:
@@ -253,6 +306,16 @@ void event_sliderChange(int32_t change){
         case STATUS:
             break;
         case OFF:
+            break;
+        case POWERSUB:
+            if(Display.alphaNum+change < 0){
+                tmp=0;
+            }else if(Display.alphaNum+change > 100){
+                tmp = 100;
+            }else{
+                tmp = Display.alphaNum+change;
+            }
+            snprintf(Display.alpha, 8, "%3d PWR", tmp);
             break;
         case TEMPSUB:
             if(Display.alphaNum+change < 0){

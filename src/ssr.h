@@ -8,6 +8,7 @@
 
 void SSR_Init();
 void SSR_Set(uint32_t dutycycle);
+uint32_t SSR_Get();
 void SSR_TurnOn();
 void SSR_TurnOff(); 
              

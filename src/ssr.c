@@ -10,6 +10,8 @@
 //14MHz/2/1024 = 6836 -> 4 sec = 27343 = TOP value
 #define TOP 27343
 
+uint32_t Duty_cycle = 0;
+
 void SSR_Init(){
   
   /* Enable clock for GPIO module */
@@ -67,23 +69,29 @@ void SSR_Init(){
 void SSR_Set(uint32_t dutycycle){
   
   uint32_t value;
+  Duty_cycle = dutycycle;
   
-  if (dutycycle<5){
-    value = 0;
-  }
-  else if(dutycycle>95){
-    value = TOP+1;
+  if (dutycycle>=100){
+	  value = TOP+1;
   }
   else{
-    value = (TOP/100)*dutycycle;
+	  value = (TOP/100)*dutycycle;
   }
-  
+
+
   TIMER_CompareBufSet(TIMER0, 0, value); 
   
 }
 
+//Power from 0 to 100
+uint32_t SSR_Get(){
+	return Duty_cycle;
+}
+
 void SSR_TurnOff(){
-  //GPIO_PinOutClear(SSR_GPIO_PORT, SSR_GPIO_PIN);
+
+  Duty_cycle = 0;
+
   /* Select CC channel parameters */
   TIMER_InitCC_TypeDef timerCCInit = TIMER_INITCC_DEFAULT;
   timerCCInit.mode = timerCCModeOff;
@@ -93,7 +101,7 @@ void SSR_TurnOff(){
 }
 
 void SSR_TurnOn(){
-  //GPIO_PinOutClear(SSR_GPIO_PORT, SSR_GPIO_PIN);
+
   /* Select CC channel parameters */
   TIMER_InitCC_TypeDef timerCCInit = TIMER_INITCC_DEFAULT;
   timerCCInit.mode = timerCCModePWM;

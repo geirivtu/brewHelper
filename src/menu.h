@@ -1,11 +1,15 @@
-#ifndef __MENU_H
-#define __MENU_H
+#ifndef __MENUALT_H
+#define __MENUALT_H
 
-void Menu_Back(void);
-void Menu_Init(void);
-void Menu_Select(void);
-void Menu_Update(void);
-void setClearDisplay(bool);
-void ClearDisplay(void);
+void MENU_Init();
+void MENU_update();
+
+void event_buttonSelect();
+void event_buttonBack();
+void event_sliderDiff(int32_t diff);
+void event_sliderChange(int32_t change);
+
+
+
 
 #endif

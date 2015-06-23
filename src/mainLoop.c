@@ -29,7 +29,8 @@
 //#include "led.h"
 #include "timer.h"
 #include "slider.h"
-#include "menuAlt.h"
+#include "menu.h"
+#include "ssr.h"
 
 
 uint32_t msTicks = 0;
@@ -105,6 +106,8 @@ void main_loop(void){
 
 	  //Setup PID
 	  //PID_Init();
+
+	  SSR_Init();
 
 	  /* Initialize MENU */
 	  MENU_Init(); //new version
